@@ -1,0 +1,95 @@
+<html>
+	<head>
+	</head>
+	<body>
+	<button id="fetch" onclick="getOrgs()">Fetch!</button>
+	<button id="put" onclick="putOrg()">Put!</button><div id="response"></div>
+	<div id="data"></div>
+	<footer>
+	<script type="text/javascript">
+		var button = document.getElementById("fetch"),
+			output = document.getElementById("data"),
+			tempscript = null,
+			nodes = [],
+			relationships = [];
+		function putOrg() {
+			var xmlHttp,
+			responseObj,
+			baseUrl = "http://localhost:7474/db/data";
+			if (window.XMLHttpRequest) {
+				xmlHttp = new XMLHttpRequest();
+			}
+			xmlHttp.open("GET", baseUrl + "/node/0", true);
+			xmlHttp.onreadystatechange = function() {
+			if(xmlHttp.readyState == 4) {
+					responseObj = JSON.parse(xmlHttp.response);
+					console.log(responseObj.data);
+					console.log(xmlHttp.getAllResponseHeaders())
+					console.log(xmlHttp.status + ': ' + xmlHttp.statusText);
+					document.getElementById('response').innerHTML = xmlHttp.responseText;
+				}
+			}
+			xmlHttp.setRequestHeader("Accept", "application/json");
+			xmlHttp.send();
+
+		}
+		function getOrgs() {
+			//fetch is in progress
+			if (tempscript)  return;
+			button.disabled = true;
+			button.style.cursor = "wait";
+			tempscript = document.createElement("script");
+			tempscript.type = "text/javascript";
+			tempscript.id = "tempscript";
+			tempscript.src = "https://siaapps.uits.arizona.edu/home/orgs/ua_orgs/index.json?wrapper=onFetchComplete";
+			document.body.appendChild(tempscript);
+		}
+		function onFetchComplete(data) {
+			//console.log(data);
+			var org = {},
+				i = 0,
+				j = 0;
+				//xmlHttp = new xmlHttpRequest();
+			/* the data is an array of objects. Each object contains three other objects.
+				UaOrg which is the org itself,
+				ParentUaOrg which is the org's parent,
+				ChildUaOrg which has children in it but we will ignore that.
+				
+				So first parse the org and add the pair to the relationships along with the name.
+			*/
+			output.innerHTML = '<ul>';
+			for(i=0; i < data.length; i++) {
+				org = data[i].UaOrg;
+				if(org.fin_code != '') {
+					output.innerHTML+='<li>'
+						+ org.fin_name + ', '
+						+ org.fin_code + ', '
+						+ 'FIN, '
+						+ 'PARENT: ' + org.fin_parent_code 
+						+ '</li>';
+				}
+				if(org.hr_code != '') {
+					output.innerHTML+='<li>'
+						+ org.hr_name + ', '
+						+ org.hr_code + ', '
+						+ 'HR, '
+						+ 'PARENT: ' + org.hr_parent_code 
+						+ '</li>';
+				}
+				if(org.fin_code != '' && org.hr_code != '') {
+					//create isomorphic relationships.
+					output.innerHTML+='<li><ul><li>ISOMORPHS: ' + org.fin_code + ' and ' + org.hr_code + '</li></ul></li>';
+				}
+			}
+			output.innerHTML += '</ul>';
+			//clean up
+			document.body.removeChild(tempscript);
+			tempscript = null;
+			//output.innerHTML = "<p>Check the console.</p>";
+			button.disabled = false;
+			button.style.cursor = "auto";
+		}
+
+	</script>
+	</footer>
+</html>
